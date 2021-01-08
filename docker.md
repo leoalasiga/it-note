@@ -447,7 +447,7 @@ docker rmi -f
 docker pull centos
 ```
 
-新建容器并启动
+#### 新建容器并启动
 
 ```shell
 docker run [可选参数] image
@@ -474,7 +474,7 @@ dev  home  lib64  media       opt  root  sbin  sys  usr
 [root@1de6b1a4d3c1 /]# exit
 ```
 
-列出所有运行的容器
+#### 列出所有运行的容器
 
 ```shell
 [root@liujiajie ~]# docker ps
@@ -494,7 +494,7 @@ b1cf4c2d9529   hello-world   "/hello"      3 hours ago     Exited (0) 3 hours ag
 
 
 
-退出容器
+#### 退出容器
 
 exit #直接容器
 
@@ -506,7 +506,7 @@ ctrl + p + q #容器不停止
 
 
 
-删除容器
+#### 删除容器
 
 docker rm 容器id   #删除指定容器(不能删除正在运行的容器)
 
@@ -516,7 +516,7 @@ docker ps -a -q|xargs docker rm # 删除所有容器
 
 
 
-启动停止容器
+#### 启动停止容器
 
 docker start 容器id #启动容器
 
@@ -530,7 +530,7 @@ docker kill  容器id #强制停止容器
 
 ### 常用其他命令
 
-后台启动容器
+#### 后台启动容器
 
 docker run -d  centos #通过这个命启动,用docker ps ,发现centos停止了
 
@@ -538,7 +538,7 @@ docker run -d  centos #通过这个命启动,用docker ps ,发现centos停止了
 
 
 
-查看日志
+#### 查看日志
 
 docker logs
 
@@ -561,7 +561,7 @@ docker logs -f -t --tail 容器id
 
 ```
 
-查看容器中的进程信息
+#### 查看容器中的进程信息
 
 ```shell
 #docker top 容器id
@@ -572,7 +572,7 @@ root                17120               16712               0                   
 
 ```
 
-查看镜像元数据
+#### 查看镜像元数据
 
 ```shell
 # docker inspect 容器id
@@ -786,4 +786,267 @@ root                17120               16712               0                   
 ]
 
 ```
+
+#### 进入当前正在运行的容器
+
+```shell
+# 我们通常容器是要后台运行的,需要进入容器,修改配置
+
+#命令
+# 方式一
+docker exec -it 容器id bashShell
+[root@liujiajie ~]# docker exec -it bb1a571f4862 /bin/bash
+[root@bb1a571f4862 /]# 
+
+# 方式二
+docker attach 容器id
+[root@liujiajie ~]# docker attach 0d43e1f6cd2a
+[root@0d43e1f6cd2a /]# 
+
+#docker exec 进入容器后开启一个新的终端,可以在里面操作(常用)
+#docker attach 进入容器正在运行的终端,不会启动新的进程
+```
+
+#### 从容器内拷贝文件到主机
+
+```shell
+docker cp 容器id:容器路径
+
+# 进入docker目录,穿件文件
+[root@liujiajie /]# docker run -it  centos /bin/bash
+[root@3dfe29c54f1e /]# 
+[root@3dfe29c54f1e /]# cd /home
+[root@3dfe29c54f1e home]# ls
+[root@3dfe29c54f1e home]# touch test.java
+[root@3dfe29c54f1e home]# exit
+exit
+#退出之后,docker的容器里还有这个文件
+[root@liujiajie /]# docker ps -a
+CONTAINER ID   IMAGE     COMMAND       CREATED          STATUS                      PORTS     NAMES
+3dfe29c54f1e   centos    "/bin/bash"   38 seconds ago   Exited (0) 10 seconds ago             quirky_almeida
+#使用cp命令拷贝出文件
+[root@liujiajie /]# docker cp 3dfe29c54f1e:/home/test.java /home
+[root@liujiajie home]# ls
+liujiajie.java  test.java
+#完成将文件拷贝到主机上,拷贝是一个手动过程,未来使用-v卷技术,实现自动同步
+
+```
+
+#### 总结
+
+![image-20210107164416127](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210107164416127.png)
+
+
+
+> docker安装nginx
+
+```shell
+[root@liujiajie home]# docker pull nginx
+Using default tag: latest
+latest: Pulling from library/nginx
+6ec7b7d162b2: Already exists 
+cb420a90068e: Pull complete 
+2766c0bf2b07: Pull complete 
+e05167b6a99d: Pull complete 
+70ac9d795e79: Pull complete 
+Digest: sha256:4cf620a5c81390ee209398ecc18e5fb9dd0f5155cd82adcbae532fec94006fb9
+Status: Downloaded newer image for nginx:latest
+docker.io/library/nginx:latest
+[root@liujiajie home]# docker images
+REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
+mysql         latest    a347a5928046   2 weeks ago     545MB
+nginx         latest    ae2feff98a0c   3 weeks ago     133MB
+centos        latest    300e315adb2f   4 weeks ago     209MB
+hello-world   latest    bf756fb1ae65   12 months ago   13.3kB
+[root@liujiajie home]# docker run -d --name nginx01 -p 3344:80 nginx
+d31d1ebc53986beeef259d069c77995ec59af13df0d8c20c64c3710a687b7087
+[root@liujiajie home]# 
+[root@liujiajie home]# docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS         PORTS                  NAMES
+d31d1ebc5398   nginx     "/docker-entrypoint.…"   3 seconds ago   Up 2 seconds   0.0.0.0:3344->80/tcp   nginx01
+[root@liujiajie home]# curl localhost:3344
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+
+# --name指定容器名字
+# -p 外网端口:容器端口
+
+#进入容器内部
+[root@liujiajie home]# docker exec -it nginx01 /bin/bash
+root@d31d1ebc5398:/# whereis nginx
+nginx: /usr/sbin/nginx /usr/lib/nginx /etc/nginx /usr/share/nginx
+
+```
+
+端口暴露的概念
+
+![image-20210107170550121](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210107170550121.png)
+
+>  每次修改nginx配置都需要进入容器内部,十分麻烦?
+
+我们可以在容器外部提供一个映射路径,达到容器修改文件名,容器内部就可以自动的修改...  (-v数据卷技术)
+
+
+
+> docker使用tomcat
+
+```shell
+# 官方版本
+$ docker run -it --rm tomcat:9.0
+# --rm 退出及删除 (一般用来测试)
+
+[root@liujiajie home]# docker run -d --name tomact01 -p 8080:8080 -h tomcathost01 tomcat
+62ef1c58ac8bd4b83a8d87ca4a867b42600b4703b559198299be78e9b3a99386
+[root@liujiajie home]# docker exec -it 62ef1c58ac8b /bin/bash
+root@tomcathost01:/usr/local/tomcat# ls
+BUILDING.txt	 LICENSE  README.md	 RUNNING.txt  conf  logs	    temp     webapps.dist
+CONTRIBUTING.md  NOTICE   RELEASE-NOTES  bin	      lib   native-jni-lib  webapps  work
+root@tomcathost01:/usr/local/tomcat# cd webapps
+root@tomcathost01:/usr/local/tomcat/webapps# 
+
+# 发现问题 
+# 1.linux命令少了
+# 2.没有webapps
+# 原因,阿里云镜像的原因,默认最小的镜像,所有不必须的都剔除了,保证了最小可运行的环境
+```
+
+
+
+>  docker 部署es和kibana
+
+```shell
+# es 暴露端口很多
+# es耗内存
+# es 的数据需要挂载出去
+
+# --net somework 这是网络配置
+
+#启动elasticsearch
+$ docker run -d --name elasticsearch --net somenetwork -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" elasticsearch:tag
+
+
+#启动了 linux服务器就卡住了
+docker stats #查看cpu状态
+
+#测试es
+
+#限制内存,修改配置文件 -e 环境配置参数
+$ docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms64m -Xmx512m"  elastics
+3d719c406b85cf98a70f9cb1fa03e13386736fc9f5e519ecb2c1b4172545a7a8
+
+#docker states查看内存使用
+CONTAINER ID   NAME            CPU %     MEM USAGE / LIMIT     MEM %     NET I/O         BLOCK I/O       PIDS
+3d719c406b85   elasticsearch   0.55%     399.1MiB / 1.795GiB   21.71%    2.94kB / 576B   109MB / 729kB   42
+
+#测试是否连通
+[root@liujiajie ~]# curl localhost:9200
+{
+  "name" : "3d719c406b85",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "K_paIlkGSKGeaMzSeNm3cQ",
+  "version" : {
+    "number" : "7.6.2",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "ef48eb35cf30adf4db14086e8aabd07ef6fb113f",
+    "build_date" : "2020-03-26T06:34:37.794943Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.4.0",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+```
+
+
+
+> 使用kibana连接kibana
+
+![image-20210108160317721](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210108160317721.png)
+
+
+
+## 可视化
+
++ portainer
+
+```shell
+docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer
+```
+
++ Rancher(CI/CD)
+
+
+
+什么是portanier
+
+> docker的图形化管理工具,提供一个后台供我们操作
+
+![image-20210108165845827](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210108165845827.png)
+
+![image-20210108170011810](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210108170011810.png)
+
+可视化面板,可以操作
+
+
+
+## Docker镜像
+
+### 镜像是什么?
+
+镜像是一种轻量级.可执行的独立软件包,用来打包软件运行环境和基于运行环境开发的软件,它包含摸个软件所需的所有内容,包括代码,运行时库,环境变量和配置文件
+
+所有的应用,直接打包docker镜像,可以直接跑起来
+
+如何得到镜像:
+
++ 从远程仓库下载
++ 自己制作一个dockerFile
++ 从别处拷贝
+
+
+
+### Docker镜像的加载原理
+
+> unionFS(联合文件系统)
+
+之前下载镜像一层一层就是这个
+
+unionFS:union文件系统是一种分层,轻量级并且高性能的文件系统,支持文件系统作为一次提交来层层叠加,同时,可以将不同目录挂载到同一个虚拟文件系统下,union文件系统是docker镜像的基础,docker通过封层来进行继承,基于基础镜像,可以制作具体的应用镜像
+
+特性:一次同时加载多个文件系统,但从外面看来,只能看到一个文件系统,联合加载就是把各层文件系统叠加起来,这样最终的文件系统会包含所有底层的文件和目录
+
+> docker镜像加载原理
+
+docker的镜像实际上是有一层一层的文件系统组成,这种层级的文件系统就是unionFS
+
+bootFs(boot file system)主要包含bootloader和kernel,bootloader主要是引导加载kernel,linux刚启动就会加载bootfs文件系统,在docker镜像的最底层是bootfs,这一层与我们典型的linux/unix是一致的,包含boot加载器和内核,当boot加载之后整个内核都在内存中了,此时内存的使用权已由bootfs转交给内核,此时系统也会卸载bootfs
+
+rootfs(root file system)
 
