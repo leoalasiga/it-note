@@ -1048,5 +1048,187 @@ docker的镜像实际上是有一层一层的文件系统组成,这种层级的�
 
 bootFs(boot file system)主要包含bootloader和kernel,bootloader主要是引导加载kernel,linux刚启动就会加载bootfs文件系统,在docker镜像的最底层是bootfs,这一层与我们典型的linux/unix是一致的,包含boot加载器和内核,当boot加载之后整个内核都在内存中了,此时内存的使用权已由bootfs转交给内核,此时系统也会卸载bootfs
 
-rootfs(root file system)
+rootfs(root file system),在bootfs智商,包含就是典型的linux系统中的/dev /proc /etc等标准目录和文件,rootfs就是各种不同操作系统的发型版本 如ubuntu,centos等等
+
+![image-20210112133842213](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210112133842213.png)
+
+平时我们的虚拟机都是好几个G,docker才200m
+
+```shell
+[root@liujiajie ~]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED         SIZE
+mysql                 latest    a347a5928046   3 weeks ago     545MB
+tomcat                latest    feba8d001e3f   3 weeks ago     649MB
+nginx                 latest    ae2feff98a0c   3 weeks ago     133MB
+centos                latest    300e315adb2f   5 weeks ago     209MB
+portainer/portainer   latest    62771b0b9b09   5 months ago    79.1MB
+elasticsearch         7.6.2     f29a1ee41030   9 months ago    791MB
+hello-world           latest    bf756fb1ae65   12 months ago   13.3kB
+
+```
+
+对于一个精简的Qs,rootfs可以很小,只包含基本的命令,工具盒程序库就可以了,因为底层直接使用kernel,自己只需要提供rootfs就可以,由此可以对于不同的linux发型版,bootfs基本一致,rootfs会有差别,因此不同的发行版可以共用bootfs
+
+### 分层理解
+
+> 分层的镜像
+
+![image-20210112134439167](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210112134439167.png)
+
+
+
+> 特点
+
+docker镜像都是只读的,当容器启动的时候,一个新的可写层 被加载到镜像的顶部,
+
+这一层就是我们通常说的容器层,容器之下都是镜像层
+
+![image-20210112135230787](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210112135230787.png)
+
+我们的所有操作都是基于容器层的
+
+
+
+如何提交一个自己的镜像
+
+## commit镜像
+
+```shell
+docker commit 提交容器成为一个新的副本
+
+docker commit -m "描述" -a "作者" 容器id 目标镜像名:tag
+```
+
+实例:新建一个新的镜像
+
+```shell
+[root@liujiajie ~]#  docker commit -a="liujiajie" -m="add webapps application" e11216466ec7 tomcat:02
+sha256:29b0660fab4d5ef3d62b564ea233ed1b2127a5784159b97a76c5ddb8bb0822da
+[root@liujiajie ~]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED         SIZE
+tomcat                02        29b0660fab4d   5 seconds ago   654MB
+mysql                 latest    a347a5928046   3 weeks ago     545MB
+tomcat                latest    feba8d001e3f   3 weeks ago     649MB
+nginx                 latest    ae2feff98a0c   3 weeks ago     133MB
+redis                 latest    ef47f3b6dc11   4 weeks ago     104MB
+centos                latest    300e315adb2f   5 weeks ago     209MB
+portainer/portainer   latest    62771b0b9b09   5 months ago    79.1MB
+elasticsearch         7.6.2     f29a1ee41030   9 months ago    791MB
+hello-world           latest    bf756fb1ae65   12 months ago   13.3kB
+
+```
+
+如果想保存的当前容器的状态,可以通过一个commit来提交,获得一个镜像
+
+## 容器数据卷(*)
+
+### 什么是容器数据卷?
+
+数据如果放在容器中,那么容器已删除,数据就会丢失 
+
+> 数据需要持久化,数据需要存储到本地
+
+容器之间可以有一个数据共享的技术,docker产生的数据,同步到本地,就是**卷**的技术,目录的挂在,,将我们的运行在容器内的目录,怪再到linux上
+
+![image-20210118140243016](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210118140243016.png)
+
+**总结一句话:**
+
+容器的持久化和同步操作,容器间也是数据共享的
+
+
+
+### 使用数据卷
+
+方式一:直接使用命令来挂在 -v
+
+docker run -it -v 主机目录:容器内目录
+
+如
+
+```shell
+docker run -it -v /home/tes:/home centos  /bin/bash
+```
+
+然后查看数据卷绑定
+
+```shell
+docker inspect 269fb205b029
+
+"Mounts": [
+    {
+        "Type": "bind",
+        "Source": "/home/tes",主机内地址
+        "Destination": "/home",docker容器内地址
+        "Mode": "",
+        "RW": true,
+        "Propagation": "rprivate"
+    }
+],
+```
+
+测试文件同步
+
+![image-20210118141128911](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210118141128911.png)
+
+1.停止容器
+
+2.在主机上修改文件
+
+3.启动容器
+
+4.容器内的文件是同步的
+
+![image-20210118141138503](C:\Users\leoalasiga\AppData\Roaming\Typora\typora-user-images\image-20210118141138503.png)
+
+### 实战:安装mysql
+
+思考:mysql持久化的问题
+
+```shell
+# 获取镜像
+docker pull mysql
+
+#官方命令
+$ docker run --name some-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:tag
+
+# 运行容器,需要做数据挂在
+# 安装mysql需要配置密码
+# -d 后台运行
+# -p 端口映射
+# -v 数据卷股灾
+# -e 环境配置
+ docker run -d -p 3306:3306 -v /home/mysql/conf:/etc/mysql/conf.d -v /home/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=ljj123456 --name my-mysql mysql
+
+# 启动成功之后,使用navicat连接,可以访问
+# 创建成功后,在navicat创建数据库,然后可以查看一下挂在的目录是否还在
+#将容器删除,挂载在本地的数据还在,
+
+```
+
+
+
+
+
+## dockerFile(*)
+
+
+
+## docker网络(*)
+
+
+
+## 企业实战
+
+
+
+## docker compose
+
+
+
+## docker swarm 
+
+
+
+## CI/CD jenkins流水线
 
