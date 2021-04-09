@@ -1192,11 +1192,11 @@ docker pull mysql
 #官方命令
 $ docker run --name some-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:tag
 
-# 运行容器,需要做数据挂在
+# 运行容器,需要做数据挂载
 # 安装mysql需要配置密码
 # -d 后台运行
 # -p 端口映射
-# -v 数据卷股灾
+# -v 数据卷挂载
 # -e 环境配置
  docker run -d -p 3306:3306 -v /home/mysql/conf:/etc/mysql/conf.d -v /home/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=ljj123456 --name my-mysql mysql
 
